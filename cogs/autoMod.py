@@ -64,11 +64,16 @@ class autoMod(commands.Cog):
         white_listed_words = self.valid_keyword_processor.extract_keywords(ctx.content.lower())
 
         if len(keywords_found) > 0:
+            print(f"{ctx.guild.id} Detected {keywords_found} in {ctx.author}: {ctx.content} \n")
             f = open("logfile.txt", "a")
-            f.write(f"Detected {keywords_found} in {ctx.author}: {ctx.content} \n")
+            f.write(f"{ctx.guild.id} Detected {keywords_found} in {ctx.author}: {ctx.content} \n")
             f.close()
 
-            await ctx.delete()
+            if not ctx.guild.id == 376932355434217473:
+                await ctx.delete()
+            
+
+            
             pass
         
         # Check against every blacklisted word in the users message.
@@ -102,10 +107,15 @@ class autoMod(commands.Cog):
 
                     # Checks how many letters substring deviates from the blacklisted word compared to a threshold.
                     if edit_distance <= 2:
+                        print(f"{ctx.guild.id} {substring} matched {word} in {ctx.author}: {ctx.content} with edit distence of {edit_distance}. \n Breaking Out of Loop. \n")
                         f = open("logfile.txt", "a")
-                        f.write(f"{substring} matched {word} in {ctx.author}: {ctx.content} with edit distence of {edit_distance}. \n Breaking Out of Loop. \n")
+                        f.write(f"{ctx.guild.id} {substring} matched {word} in {ctx.author}: {ctx.content} with edit distence of {edit_distance}. \n Breaking Out of Loop. \n")
                         f.close()
-                        await ctx.delete()
+
+                        if not ctx.guild.id == 376932355434217473:
+                            await ctx.delete()
+
+                        
                         word_found = True
                         break
 
