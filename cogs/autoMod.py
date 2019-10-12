@@ -100,7 +100,7 @@ class autoMod(commands.Cog):
                     # Determine total characters the substring has different compared to the blacklisted word.
                     edit_distance = editdistance.eval(word,substring)
 
-                    # Checks how many letters substring deviates from the blacklisted word.
+                    # Checks how many letters substring deviates from the blacklisted word compared to a threshold.
                     if edit_distance <= 2:
                         f = open("logfile.txt", "a")
                         f.write(f"{substring} matched {word} in {ctx.author}: {ctx.content} with edit distence of {edit_distance}. \n Breaking Out of Loop. \n")
