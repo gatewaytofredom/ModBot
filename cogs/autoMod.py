@@ -64,8 +64,11 @@ class autoMod(commands.Cog):
         temp_valid_word = self.valid_keyword_processor.extract_keywords(ctx.content.lower())
 
         if len(keywords_found) > 0:
-            print(f"found {keywords_found} in {ctx.content}")
-            await ctx.delete()
+            f = open("logfile.txt", "a")
+            f.write(f"Detected {keywords_found} in {ctx.author}: {ctx.content} \n")
+            f.close()
+
+            # await ctx.delete()
             pass
         
         # Check against every blacklisted word in the users message.
@@ -99,9 +102,10 @@ class autoMod(commands.Cog):
 
                     # Checks how many letters substring deviates from the blacklisted word.
                     if edit_distance <= 2:
-                        
-                        await ctx.delete()
-                        print(f"{substring} matched {word} in {ctx.content} with edit distence of {edit_distance}. \n Breaking Out of Loop.")
+                        f = open("logfile.txt", "a")
+                        f.write(f"{substring} matched {word} in {ctx.author}: {ctx.content} with edit distence of {edit_distance}. \n Breaking Out of Loop. \n")
+                        f.close()
+                        # await ctx.delete()
                         word_found = True
                         break
 
