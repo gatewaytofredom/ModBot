@@ -5,7 +5,6 @@ import logging
 import os
 from pathlib import Path
 
-
 import discord
 from discord.ext import commands
 
@@ -60,7 +59,9 @@ class Bot(commands.Bot):
         Attempts to load all .py files in /cogs/ as cog extensions
         """
         await self.wait_until_ready()
-        await asyncio.sleep(1)  # ensure that on_ready has completed and finished printing
+
+        # ensure that on_ready has completed and finished printing
+        await asyncio.sleep(1)  
         cogs = [x.stem for x in Path('cogs').glob('*.py')]
         for extension in cogs:
             try:
@@ -89,8 +90,10 @@ class Bot(commands.Bot):
         If you wish to have multiple event listeners they can be added in other cogs. All on_message listeners should
         always ignore bots.
         """
+
+        # ignore all bots
         if message.author.bot:
-            return  # ignore all bots
+            return  
         await self.process_commands(message)
 
 
