@@ -35,7 +35,7 @@ class autoMod(commands.Cog):
     @commands.command()
     async def reload(self,ctx):
         self.black_list = []
-        self.valid_words = []
+        self.white_list = []
 
         # Load the blacklisted words.
         with open('data/wordblacklist.json') as wordlist:
@@ -46,9 +46,9 @@ class autoMod(commands.Cog):
 
         # Load the non vulgar english words.
         with open('data/valid_words.json') as valid_words:
-            self.valid_words = json.load(valid_words)
+            self.white_list = json.load(valid_words)
 
-            for word in self.valid_words:
+            for word in self.white_list:
                 self.valid_keyword_processor.add_keyword(word)
 
     @commands.Cog.listener()
@@ -61,11 +61,19 @@ class autoMod(commands.Cog):
         word_found = False
 
         keywords_found = self.blacklsited_keyword_processor.extract_keywords(ctx.content.lower())
-        temp_valid_word = self.valid_keyword_processor.extract_keywords(ctx.content.lower())
+        white_listed_words = self.valid_keyword_processor.extract_keywords(ctx.content.lower())
 
         if len(keywords_found) > 0:
-            print(f"found {keywords_found} in {ctx.content}")
-            await ctx.delete()
+            print(f"{ctx.guild.id} Detected {keywords_found} in: {ctx.content} \n")
+            f = open("logfile.txt", "a")
+            f.write(f"{ctx.guild.id} Detected {keywords_found} in: {ctx.content} \n")
+            f.close()
+
+            if not ctx.guild.id == 376932355434217473:
+                # await ctx.delete()
+                pass
+
+            
             pass
         
         # Check against every blacklisted word in the users message.
@@ -85,7 +93,7 @@ class autoMod(commands.Cog):
 
                     # checks the substring contains a real word.
                     # Breaks here to prevent a false positive.
-                    if len(temp_valid_word) > 0:
+                    if len(white_listed_words) > 0:
                         word_found = True
                         break
 
@@ -97,16 +105,24 @@ class autoMod(commands.Cog):
                     # Determine total characters the substring has different compared to the blacklisted word.
                     edit_distance = editdistance.eval(word,substring)
 
-                    # Checks how many letters substring deviates from the blacklisted word.
-                    if edit_distance <= 2:
+                    # Checks how many letters substring deviates from the blacklisted word compared to a threshold.
+                    if (edit_distance <= 2 and len(substring) > 5) or (edit_distance == 1 and len(substring) <= 2):
+                        print(f"{ctx.guild.id} {substring} matched {word} in: {ctx.content} with edit distance of {edit_distance}. \n Breaking Out of Loop. \n")
+                        f = open("logfile.txt", "a")
+                        f.write(f"{ctx.guild.id} {substring} matched {word} in: {ctx.content} with edit distance of {edit_distance}. \n Breaking Out of Loop. \n")
+                        f.close()
+
+                        if not ctx.guild.id == 376932355434217473:
+                            # await ctx.delete()
+                            pass
+
                         
-                        await ctx.delete()
-                        print(f"{substring} matched {word} in {ctx.content} with edit distence of {edit_distance}. \n Breaking Out of Loop.")
                         word_found = True
                         break
 
             except Exception as e:
                 print(f"!exception! \n {e}")
+                break
             
             # Exits the loop if a blacklisted word is detected.
             if word_found:
