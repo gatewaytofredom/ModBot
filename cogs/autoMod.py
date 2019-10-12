@@ -64,14 +64,14 @@ class autoMod(commands.Cog):
         white_listed_words = self.valid_keyword_processor.extract_keywords(ctx.content.lower())
 
         if len(keywords_found) > 0:
-            print(f"{ctx.guild.id} Detected {keywords_found} in {ctx.author}: {ctx.content} \n")
+            print(f"{ctx.guild.id} Detected {keywords_found} in: {ctx.content} \n")
             f = open("logfile.txt", "a")
-            f.write(f"{ctx.guild.id} Detected {keywords_found} in {ctx.author}: {ctx.content} \n")
+            f.write(f"{ctx.guild.id} Detected {keywords_found} in: {ctx.content} \n")
             f.close()
 
             if not ctx.guild.id == 376932355434217473:
-                await ctx.delete()
-            
+                # await ctx.delete()
+                pass
 
             
             pass
@@ -106,14 +106,15 @@ class autoMod(commands.Cog):
                     edit_distance = editdistance.eval(word,substring)
 
                     # Checks how many letters substring deviates from the blacklisted word compared to a threshold.
-                    if edit_distance <= 2:
-                        print(f"{ctx.guild.id} {substring} matched {word} in {ctx.author}: {ctx.content} with edit distence of {edit_distance}. \n Breaking Out of Loop. \n")
+                    if (edit_distance <= 2 and len(substring) > 5) or (edit_distance == 1 and len(substring) <= 2):
+                        print(f"{ctx.guild.id} {substring} matched {word} in: {ctx.content} with edit distance of {edit_distance}. \n Breaking Out of Loop. \n")
                         f = open("logfile.txt", "a")
-                        f.write(f"{ctx.guild.id} {substring} matched {word} in {ctx.author}: {ctx.content} with edit distence of {edit_distance}. \n Breaking Out of Loop. \n")
+                        f.write(f"{ctx.guild.id} {substring} matched {word} in: {ctx.content} with edit distance of {edit_distance}. \n Breaking Out of Loop. \n")
                         f.close()
 
                         if not ctx.guild.id == 376932355434217473:
-                            await ctx.delete()
+                            # await ctx.delete()
+                            pass
 
                         
                         word_found = True
@@ -121,6 +122,7 @@ class autoMod(commands.Cog):
 
             except Exception as e:
                 print(f"!exception! \n {e}")
+                break
             
             # Exits the loop if a blacklisted word is detected.
             if word_found:
