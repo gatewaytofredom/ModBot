@@ -35,7 +35,7 @@ class autoMod(commands.Cog):
     @commands.command()
     async def reload(self,ctx):
         self.black_list = []
-        self.valid_words = []
+        self.white_list = []
 
         # Load the blacklisted words.
         with open('data/wordblacklist.json') as wordlist:
@@ -46,9 +46,9 @@ class autoMod(commands.Cog):
 
         # Load the non vulgar english words.
         with open('data/valid_words.json') as valid_words:
-            self.valid_words = json.load(valid_words)
+            self.white_list = json.load(valid_words)
 
-            for word in self.valid_words:
+            for word in self.white_list:
                 self.valid_keyword_processor.add_keyword(word)
 
     @commands.Cog.listener()
@@ -61,14 +61,14 @@ class autoMod(commands.Cog):
         word_found = False
 
         keywords_found = self.blacklsited_keyword_processor.extract_keywords(ctx.content.lower())
-        temp_valid_word = self.valid_keyword_processor.extract_keywords(ctx.content.lower())
+        white_listed_words = self.valid_keyword_processor.extract_keywords(ctx.content.lower())
 
         if len(keywords_found) > 0:
             f = open("logfile.txt", "a")
             f.write(f"Detected {keywords_found} in {ctx.author}: {ctx.content} \n")
             f.close()
 
-            # await ctx.delete()
+            await ctx.delete()
             pass
         
         # Check against every blacklisted word in the users message.
@@ -88,7 +88,7 @@ class autoMod(commands.Cog):
 
                     # checks the substring contains a real word.
                     # Breaks here to prevent a false positive.
-                    if len(temp_valid_word) > 0:
+                    if len(white_listed_words) > 0:
                         word_found = True
                         break
 
@@ -105,7 +105,7 @@ class autoMod(commands.Cog):
                         f = open("logfile.txt", "a")
                         f.write(f"{substring} matched {word} in {ctx.author}: {ctx.content} with edit distence of {edit_distance}. \n Breaking Out of Loop. \n")
                         f.close()
-                        # await ctx.delete()
+                        await ctx.delete()
                         word_found = True
                         break
 
