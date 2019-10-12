@@ -36,10 +36,15 @@ class autoMod(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, ctx):
+
+        if message.author.bot:
+            return
+            
         word_found = False
         # print(f"{ctx.author} said {ctx.content}")
 
         keywords_found = self.keyword_processor.extract_keywords(ctx.content.lower())
+        temp_valid_word = self.valid_keyword_processor.extract_keywords(ctx.content.lower())
 
         if len(keywords_found) > 0:
             print(f"found {keywords_found} in {ctx.content}")
@@ -60,20 +65,18 @@ class autoMod(commands.Cog):
 
                     substring = ctx.content[index:len(word) + index].lower()
 
-                    print(f"Substring = {substring}")
+                    # print(f"Substring = {substring}")
                     
-                    temp_valid_word = self.valid_keyword_processor.extract_keywords(ctx.content.lower())
-
-                    print(f"temp valid word = {temp_valid_word}")
+                    # print(f"temp valid word = {temp_valid_word}")
 
                     if len(temp_valid_word) > 0:
-                        print(f"Valid word {substring} found. \n Breaking Out of Loop.")
+                        # print(f"Valid word {substring} found. \n Breaking Out of Loop.")
                         word_found = True
                         break
 
                     #Checks if substrings legth is that of the word were checking against.
                     if not (len(substring) == len(word)) or len(substring) <= 2:
-                        print(f"{substring} length of {len(substring)} \n")
+                        # print(f"{substring} length of {len(substring)} \n")
                         break
 
                     edit_distance = editdistance.eval(word,substring)
@@ -84,9 +87,7 @@ class autoMod(commands.Cog):
                         print(f"{substring} matched {word} in {ctx.content} with edit distence of {edit_distance}. \n Breaking Out of Loop.")
                         word_found = True
                         break
-
-
-            
+           
             except Exception as e:
                 print(f"!excetion! \n {e}")
             
