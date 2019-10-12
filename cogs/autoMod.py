@@ -4,6 +4,7 @@ import os
 import editdistance
 from flashtext import KeywordProcessor
 from discord.ext import commands
+from profanity_check import predict, predict_prob
 
 class autoMod(commands.Cog):
     def __init__(self, bot):
@@ -34,22 +35,37 @@ class autoMod(commands.Cog):
 
     @commands.command()
     async def reload(self,ctx):
+
+        for word in self.black_list:
+            self.blacklsited_keyword_processor.remove_keyword(word)
+
+        for word in self.valid_words:
+            self.valid_keyword_processor.remove_keyword(word)
+
         self.black_list = []
         self.white_list = []
 
-        # Load the blacklisted words.
-        with open('data/wordblacklist.json') as wordlist:
-            self.black_list = json.load(wordlist)
+        try:
+            # Load the blacklisted words.
+            with open('data/wordblacklist.json') as wordlist:
+                self.black_list = json.load(wordlist)
         
-            for word in self.black_list:
-                self.blacklsited_keyword_processor.add_keyword(word)
+                for word in self.black_list:
+                    self.blacklsited_keyword_processor.add_keyword(word)
+        except Exception as e:
+            print(e)
+        
+        try:
+            # Load the non vulgar english words.
+            with open('data/valid_words.json') as valid_words:
+                self.white_list = json.load(valid_words)
 
-        # Load the non vulgar english words.
-        with open('data/valid_words.json') as valid_words:
-            self.white_list = json.load(valid_words)
+                for word in self.white_list:
+                    self.valid_keyword_processor.add_keyword(word)
+        except Exception as e:
+            print(e)
 
-            for word in self.white_list:
-                self.valid_keyword_processor.add_keyword(word)
+        print("Keywords updated!")
 
     @commands.Cog.listener()
     async def on_message(self, ctx):
@@ -63,26 +79,37 @@ class autoMod(commands.Cog):
         keywords_found = self.blacklsited_keyword_processor.extract_keywords(ctx.content.lower())
         white_listed_words = self.valid_keyword_processor.extract_keywords(ctx.content.lower())
 
+        message_list = [ctx.content]
+        offensive_probability = predict_prob(message_list)
+        word_found = False
+
+        keywords_found = self.blacklsited_keyword_processor.extract_keywords(ctx.content.lower())
+        white_listed_words = self.valid_keyword_processor.extract_keywords(ctx.content.lower())
+
         if len(keywords_found) > 0:
-            print(f"{ctx.guild.id} Detected {keywords_found} in: {ctx.content} \n")
-            f = open("logfile.txt", "a")
-            f.write(f"{ctx.guild.id} Detected {keywords_found} in: {ctx.content} \n")
-            f.close()
-
-            if not ctx.guild.id == 376932355434217473:
-                # await ctx.delete()
-                pass
-
-            
+            print(f"Detected {keywords_found} in: {ctx.content} \n")
+            f = open("logfile.txt", "a",encoding="utf-8")
+            f.write(f"Direct Match: Detected {keywords_found} in: {ctx.content} \n")
+            f.close()  
+            await ctx.delete()              
             pass
-        
+
+            if offensive_probability >= 0.75:
+                print(f"{offensive_probability}: {ctx.content}")
+                f = open("logfile.txt", "a",encoding="utf-8")
+                f.write(f"{offensive_probability}: {ctx.content} \n")
+                f.close()
+                await ctx.delete()
+                return
+
+        print(f"{offensive_probability}: {ctx.content}")
         # Check against every blacklisted word in the users message.
         for word in self.black_list:
 
             # Skip current blacklisted word if it has more characters than the users message.
             if len(word) > len(ctx.content):
                 continue
-            
+        
             try:
 
                 # Iterate for the total length of the users message.
@@ -106,19 +133,25 @@ class autoMod(commands.Cog):
                     edit_distance = editdistance.eval(word,substring)
 
                     # Checks how many letters substring deviates from the blacklisted word compared to a threshold.
-                    if (edit_distance <= 2 and len(substring) > 5) or (edit_distance == 1 and len(substring) <= 2):
-                        print(f"{ctx.guild.id} {substring} matched {word} in: {ctx.content} with edit distance of {edit_distance}. \n Breaking Out of Loop. \n")
-                        f = open("logfile.txt", "a")
-                        f.write(f"{ctx.guild.id} {substring} matched {word} in: {ctx.content} with edit distance of {edit_distance}. \n Breaking Out of Loop. \n")
-                        f.close()
+                    if (edit_distance <= 2 and len(substring) > 4) or (edit_distance == 1 and len(substring) <= 4):
 
-                        if not ctx.guild.id == 376932355434217473:
-                            # await ctx.delete()
-                            pass
+                        substring_valid_words = self.valid_keyword_processor.extract_keywords(substring.lower())
 
-                        
-                        word_found = True
-                        break
+                        if len(substring_valid_words) > 0:
+                            print(f"{substring} found to be valid")
+                            word_found = True
+                            break
+
+                        if offensive_probability >= 0.30:
+                            print(f"{offensive_probability}: {ctx.content}")
+                            print(f"{substring} matched {word} in: {ctx.content} with edit distance of {edit_distance}.\n")
+                            f = open("logfile.txt", "a",encoding="utf-8")
+                            f.write(f"offensive_probability: {offensive_probability}.   {substring} matched {word} in: {ctx.content} with edit distance of {edit_distance}. \n")
+                            f.close()
+                            await ctx.delete()
+
+                            word_found = True
+                            break
 
             except Exception as e:
                 print(f"!exception! \n {e}")
@@ -126,7 +159,7 @@ class autoMod(commands.Cog):
             
             # Exits the loop if a blacklisted word is detected.
             if word_found:
-                break
+                break      
             
 def setup(bot):
     bot.add_cog(autoMod(bot))
