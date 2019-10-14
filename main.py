@@ -51,7 +51,7 @@ class Bot(commands.Bot):
         self.start_time = datetime.datetime.utcnow()
 
     async def get_prefix_(self, bot, message):
-        prefix = ['!']
+        prefix = ['$']
         return commands.when_mentioned_or(*prefix)(bot, message)
 
     async def load_all_extensions(self):
