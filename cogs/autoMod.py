@@ -2,6 +2,7 @@ import discord
 import json
 import os
 import editdistance
+import time
 from flashtext import KeywordProcessor
 from discord.ext import commands
 from profanity_check import predict, predict_prob
@@ -26,10 +27,6 @@ class autoMod(commands.Cog):
 
             for word in self.valid_words:
                 self.valid_keyword_processor.add_keyword(word)
-
-        # Clear both lists after use to reduce memory usage after use.
-        # self.black_list = []
-        # self.valid_words = []
 
         self.bot = bot
 
@@ -67,99 +64,96 @@ class autoMod(commands.Cog):
 
         print("Keywords updated!")
 
+    def directStringMatch(self,keywords_found,message,ctx):
+        if len(keywords_found) > 0:
+            print(f"Detected {keywords_found} in: {message} \n")
+            f = open("logfile.txt", "a",encoding="utf-8")
+            f.write(f"Direct Match: Detected {keywords_found} in: {message} \n")
+            f.close()              
+            return True
+
+    def substringMatch(self,users_message,ctx):
+
+        list_of_words = ctx.content.split(" ")
+        word_found = False
+
+        for space_split_word in list_of_words:
+            for blacklisted_word in self.black_list:
+
+                # Skip current blacklisted word if it has more characters than the users message.
+                if len(blacklisted_word) > len(space_split_word):
+                    continue
+
+                try:
+                    # Iterate for the total length of the users message.
+                    for i in range(0,len(space_split_word) - len(blacklisted_word) + 1) :
+                        # print(f"index:{i} of { len(space_split_word) - len(blacklisted_word) } ")
+
+                        # Set substring to the length of the blacklisted word we are matching against.
+                        substring = space_split_word[i:len(blacklisted_word) + i].lower()
+                        # print(f"{substring} of {space_split_word}")
+
+                        # Checks if substrings length is that of the word were checking against.
+                        # Break here to prevent a false positive.
+                        if not len(substring) >= 2:
+                            break
+
+                        # Determine total characters the substring has different compared to the blacklisted word.
+                        edit_distance = editdistance.eval(blacklisted_word,substring)
+
+                        # Checks how many letters substring deviates from the blacklisted word compared to a threshold.
+                        if (edit_distance <=1 and len(substring) >= 6):
+
+                            substring_valid_words = self.valid_keyword_processor.extract_keywords(space_split_word.lower())
+
+                            if len(substring_valid_words) > 0:
+                                print(f"{substring} found to be valid because {substring_valid_words} is a valid word.")
+                                word_found = False
+                                break
+
+                            print(f"{substring} matched {blacklisted_word} in: {ctx.content} with edit distance of {edit_distance}.\n")
+                            f = open("logfile.txt", "a",encoding="utf-8")
+                            f.write(f"{substring} matched {blacklisted_word} in: {ctx.content} with edit distance of {edit_distance}. \n")
+                            f.close()
+                            return True
+
+                except Exception as e:
+                    print(f"!exception! \n {e}")
+                    break
+                
+                # Exits the loop if a blacklisted word is detected.
+                if word_found:
+                    break
+   
     @commands.Cog.listener()
     async def on_message(self, ctx):
+
+        users_message = ctx.content.lower()
 
         # Ignores other bots.
         if ctx.author.bot:
             return
 
+        start_time = time.time()
+
         word_found = False
 
-        keywords_found = self.blacklsited_keyword_processor.extract_keywords(ctx.content.lower())
-        white_listed_words = self.valid_keyword_processor.extract_keywords(ctx.content.lower())
+        keywords_found = self.blacklsited_keyword_processor.extract_keywords(users_message)
+        white_listed_words = self.valid_keyword_processor.extract_keywords(users_message)
 
-        message_list = [ctx.content]
-        offensive_probability = predict_prob(message_list)
-        word_found = False
-
-        keywords_found = self.blacklsited_keyword_processor.extract_keywords(ctx.content.lower())
-        white_listed_words = self.valid_keyword_processor.extract_keywords(ctx.content.lower())
-
-        if len(keywords_found) > 0:
-            print(f"Detected {keywords_found} in: {ctx.content} \n")
-            f = open("logfile.txt", "a",encoding="utf-8")
-            f.write(f"Direct Match: Detected {keywords_found} in: {ctx.content} \n")
-            f.close()  
-            await ctx.delete()              
-            pass
-
-            if offensive_probability >= 0.75:
-                print(f"{offensive_probability}: {ctx.content}")
-                f = open("logfile.txt", "a",encoding="utf-8")
-                f.write(f"{offensive_probability}: {ctx.content} \n")
-                f.close()
+        if(self.directStringMatch(keywords_found,users_message,ctx)):
+            if ctx.guild.id == 376932355434217473:
                 await ctx.delete()
-                return
-
-        print(f"{offensive_probability}: {ctx.content}")
-        # Check against every blacklisted word in the users message.
-        for word in self.black_list:
-
-            # Skip current blacklisted word if it has more characters than the users message.
-            if len(word) > len(ctx.content):
-                continue
+            word_found = True
         
-            try:
+        if not word_found:
+            if(self.substringMatch(users_message,ctx)):
+                if ctx.guild.id == 376932355434217473:
+                    await ctx.delete()
 
-                # Iterate for the total length of the users message.
-                for index in range(0,len(ctx.content)):
+        end_time = time.time()
 
-                    # Set substring to the length of the blacklisted word we are matching against.
-                    substring = ctx.content[index:len(word) + index].lower()
-
-                    # checks the substring contains a real word.
-                    # Breaks here to prevent a false positive.
-                    if len(white_listed_words) > 0:
-                        word_found = True
-                        break
-
-                    # Checks if substrings length is that of the word were checking against.
-                    # Break here to prevent a false positive.
-                    if not (len(substring) == len(word)) or len(substring) <= 2:
-                        break
-
-                    # Determine total characters the substring has different compared to the blacklisted word.
-                    edit_distance = editdistance.eval(word,substring)
-
-                    # Checks how many letters substring deviates from the blacklisted word compared to a threshold.
-                    if (edit_distance <= 2 and len(substring) > 4) or (edit_distance == 1 and len(substring) <= 4):
-
-                        substring_valid_words = self.valid_keyword_processor.extract_keywords(substring.lower())
-
-                        if len(substring_valid_words) > 0:
-                            print(f"{substring} found to be valid")
-                            word_found = True
-                            break
-
-                        if offensive_probability >= 0.30:
-                            print(f"{offensive_probability}: {ctx.content}")
-                            print(f"{substring} matched {word} in: {ctx.content} with edit distance of {edit_distance}.\n")
-                            f = open("logfile.txt", "a",encoding="utf-8")
-                            f.write(f"offensive_probability: {offensive_probability}.   {substring} matched {word} in: {ctx.content} with edit distance of {edit_distance}. \n")
-                            f.close()
-                            await ctx.delete()
-
-                            word_found = True
-                            break
-
-            except Exception as e:
-                print(f"!exception! \n {e}")
-                break
-            
-            # Exits the loop if a blacklisted word is detected.
-            if word_found:
-                break      
+        print(f"time taken: {end_time - start_time}")             
             
 def setup(bot):
     bot.add_cog(autoMod(bot))

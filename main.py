@@ -71,6 +71,10 @@ class Bot(commands.Bot):
                 error = f'{extension}\n {type(e).__name__} : {e}'
                 print(f'failed to load extension {error}')
             print('-' * 10)
+        
+        print("Bot is currently in; \n")
+        for guild in self.guilds:
+            print(f"{guild}\n")
 
     async def on_ready(self):
         """
