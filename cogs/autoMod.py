@@ -122,7 +122,7 @@ class autoMod(commands.Cog):
 
                             substring_valid_words = self.valid_keyword_processor.extract_keywords(substring.lower())
                              
-                            if len(substring_valid_words) > 0 and edit_distance != 0:
+                            if len(substring_valid_words) > 0:
                                 print(f"{substring} found to be valid because {substring_valid_words} is a valid word.")
                                 word_found = True
                                 break
