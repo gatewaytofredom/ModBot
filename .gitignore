@@ -123,3 +123,8 @@ dmypy.json
 .pyre/
 data/config.json
 logfile.txt
+bot/data/config.json
+server/data/config.json
+server/data/short_wordblacklist.json
+bot/data/short_wordblacklist.json
+bot/data/guildSettings.db
