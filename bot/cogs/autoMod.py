@@ -9,18 +9,6 @@ from flashtext import KeywordProcessor
 from discord.ext import commands
 
 
-# class modbotSetting():
-#     def __init__(self, entry):
-#         self.enable_blacklist = entry[1]
-#         self.enable_deepStringMatch = entry[2]
-#         self.selected_blacklist_name = entry[3]
-
-#     def print_all(self):
-#         print(f'enable_blacklist: {self.enable_blacklist}')
-#         print(f'enable_deepStringMatch: {self.enable_deepStringMatch}')
-#         print(f'selected_blacklist_name: {self.selected_blacklist_name}')
-
-
 class autoMod(commands.Cog):
     def __init__(self, bot):
 
