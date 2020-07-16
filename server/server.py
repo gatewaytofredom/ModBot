@@ -6,6 +6,8 @@ import editdistance
 import requests
 import json
 
+from timeit import default_timer as timer
+
 
 app = Flask(__name__)
 
@@ -57,19 +59,22 @@ def get_blacklist(blacklist_id):
 
 @app.route('/mod-bot/api/v1.0/deep-check/<string:message>')
 def deep_check(message):
+
+    start = timer()
     '''
     Tokenizes message and checks substring of each token for a word in the blacklist.
     Compares hash of each token with hashmap of all blacklisted words.
     '''
     tokens = message.lower().split(' ')
     extractedKeywords = []
+    subTokens = []
 
     # Sliding slicing of each token
     for token in tokens:
         # Number of letters to extract from the token
         for length in range(3, len(token) - 1):
             for startingIndex in range(0, len(token) - length):
-                subToken = token[startingIndex: length + startingIndex]
+                subToken = (token[startingIndex: length + startingIndex])
 
                 # TODO: implement keyword_processor switch
                 if length >= 4:
@@ -109,6 +114,8 @@ def deep_check(message):
                 if (response_dict[0]['meta']['id'].split(":")[0] == str_replaced_tokens
                         and response_dict[0]['meta']['offensive'] == True):
                     print("Bad word detected")
+                    end = timer()
+                    print(end - start)
                     return jsonify(True)
                 else:
                     print(f"{token} determined to be non-offensive.")
@@ -116,10 +123,15 @@ def deep_check(message):
             else:
                 print("Meta keyword missing from payload.")
                 if len(extractedKeywords) > 0:
+                    end = timer()
+                    print(start - end)
                     return jsonify(True)
                 else:
+                    end = timer()
+                    print(end - start)
                     return jsonify(False)
-
+    end = timer()
+    print(end - start)
     return jsonify(False)
 
 
