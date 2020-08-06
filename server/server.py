@@ -72,7 +72,7 @@ def deep_check(message):
     for token in tokens:
         # Number of letters to extract from the token
 
-        if len(token) > 160:
+        if len(token) > 60:
             print("Token exceded 160 characters. \n skipping.\n")
             pass
 
