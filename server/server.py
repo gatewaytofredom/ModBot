@@ -63,7 +63,6 @@ def deep_check(message):
     start = timer()
     '''
     Tokenizes message and checks substring of each token for a word in the blacklist.
-    Compares hash of each token with hashmap of all blacklisted words.
     '''
     tokens = message.lower().split(' ')
     extractedKeywords = []
@@ -72,11 +71,17 @@ def deep_check(message):
     # Sliding slicing of each token
     for token in tokens:
         # Number of letters to extract from the token
+
+        if len(token) > 160:
+            print("Token exceded 160 characters. \n skipping.\n")
+            pass
+
         for length in range(3, len(token) - 1):
             for startingIndex in range(0, len(token) - length):
                 subToken = (token[startingIndex: length + startingIndex])
 
-                # TODO: implement keyword_processor switch
+                # TODO: implement keyword_processor switch for blacklist
+
                 if length >= 4:
                     for word in bl.loadDefaultBlacklist():
                         if editdistance.eval(word, subToken) <= 1:
